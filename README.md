@@ -1,56 +1,74 @@
 # Filler
 
-A robot that plays **Filler**: two robots take turns placing shapes on a grid,
-and whoever covers the most squares wins.
+This is my robot for **Filler**, a little game where two robots take turns
+dropping shapes onto a grid. Whoever ends up covering more of the board wins.
 
-Our robot is written in Rust and lives in the `solution` folder.
+I wrote the robot in Rust. Everything I built lives in the `solution` folder.
+The rest of this repo (the game engine, the maps and the enemy robots) came
+with the project.
 
-## The rules
+## How the game works
 
-Each turn the robot gets the board and a shape. The shape must:
+Every turn the game engine sends my robot two things: the current board and a
+new shape to place. A placement only counts if the shape:
 
-1. cover **exactly one** of our squares
-2. cover **none** of the enemy's squares
-3. stay **inside** the board
+1. touches **exactly one** square I already own
+2. doesn't touch **any** of the enemy's squares
+3. stays **inside** the board
 
-The robot answers with the position as `X Y` (column, then row).
+The robot replies with where it wants to put the shape, written as `X Y`
+(column first, then row). If it can't find a legal spot, the game is over for
+it.
 
-## How it chooses a move
+## How my robot thinks
 
-1. Find every allowed spot.
-2. Keep the 10 spots closest to the enemy.
-3. For each one, count the empty squares we would reach before the enemy.
-4. Pick the spot that wins the most squares.
+Just grabbing the spot closest to the enemy is enough against the weaker
+robots, but the strong ones punish it because it ignores what happens next. So
+my robot looks one step further:
 
-## Files
+1. Lists every legal spot for the shape.
+2. Keeps only the 10 spots that are closest to the enemy, so it stays
+   aggressive and still runs fast.
+3. For each of those, imagines the board after the move and counts how many
+   empty squares I could reach before the enemy can.
+4. Plays the spot that gives me the most territory.
+
+The idea is to push toward the enemy and close off space, so they run out of
+room before I do.
+
+## What's in the code
 
 | File | What it does |
 |---|---|
-| `solution/src/main.rs` | reads the game, asks for a move, prints the answer |
-| `solution/src/parser.rs` | turns the game's text into a board and a shape |
-| `solution/src/placement.rs` | checks the 3 rules and lists all allowed spots |
-| `solution/src/strategy.rs` | picks the best spot |
-| `solution/src/output.rs` | writes the answer as `X Y` |
-| `solution/src/bin/visualizer.rs` | shows a game in color |
-| `solution/src/tests/` | the unit tests |
+| `solution/src/main.rs` | the main loop: read the turn, pick a move, answer |
+| `solution/src/parser.rs` | turns the engine's text into a board and a shape |
+| `solution/src/placement.rs` | checks the three rules and finds every legal spot |
+| `solution/src/strategy.rs` | decides which spot is best |
+| `solution/src/output.rs` | prints the answer as `X Y` |
+| `solution/src/bin/visualizer.rs` | replays a game in color so you can watch it |
+| `solution/src/tests/` | unit tests |
 
-## Filler docker image
+## Running it
 
-- To build the image `docker build -t filler .`
-- To run the container `docker run -v "$(pwd)/solution":/filler/solution -it filler`. This instruction will open a terminal in the container, the directory `solution` will be mounted in the container as well.
-- Example of a command in the container `./linux_game_engine -f maps/map01 -p1 linux_robots/bender -p2 linux_robots/terminator`
-- Your solution should be inside the `solution` directory so it will be mounted and compiled inside the container and it will be able to be run in the game engine.
+Everything runs inside Docker, so you don't need Rust installed on your own
+machine.
+
+Build the image:
+
+```bash
+docker build -t filler .
+```
+
+Start the container. This mounts the `solution` folder inside it, so any change
+you make on your machine shows up in the container straight away:
+
+```bash
+docker run -v "$(pwd)/solution":/filler/solution -it filler
+```
 
 On Windows PowerShell, use `${PWD}` instead of `$(pwd)`.
 
-### Notes
-
-- `Terminator` is a very strong robot so it's optional to beat him.
-- For M1 Macs use `m1_robots` and `m1_game_engine`.
-
-## Run it
-
-Inside the container:
+Once you're inside, build the robot and run the tests:
 
 ```bash
 cd solution
@@ -59,19 +77,24 @@ cargo test
 cd ..
 ```
 
-Play a game:
+Then play a game against one of the provided robots:
 
 ```bash
 ./linux_game_engine -f maps/map00 -p1 solution/target/release/filler -p2 linux_robots/wall_e
 ```
 
-Watch it in color (add a number at the end for the speed, in milliseconds):
+If you want to actually watch the game, pipe it into the visualizer. You can
+add a number at the end to set the speed in milliseconds:
 
 ```bash
 ./linux_game_engine -f maps/map01 -p1 solution/target/release/filler -p2 linux_robots/h2_d2 | solution/target/release/visualizer
 ```
 
-## Results
+On an M1 Mac, use `m1_game_engine` and `m1_robots` instead of the `linux_` ones.
+
+## How it did
+
+I played each matchup several times to make sure the wins weren't luck:
 
 | Map | Enemy | Wins |
 |---|---|---|
@@ -80,4 +103,5 @@ Watch it in color (add a number at the end for the speed, in milliseconds):
 | map02 | bender | 5 / 5 |
 | map02 | terminator | 10 / 10 |
 
-Use **map02** for the terminator bonus.
+Terminator is the strongest robot, and beating it is an optional bonus. My
+robot beats it every time on **map02**, so use that map if you want to see it.
