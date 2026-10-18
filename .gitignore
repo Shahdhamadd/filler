@@ -1,0 +1,10 @@
+solution/target/
+**/*.rs.bk
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.vscode/
+.idea/
+*.swp
