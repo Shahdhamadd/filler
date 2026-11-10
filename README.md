@@ -63,7 +63,7 @@ Start the container. This mounts the `solution` folder inside it, so any change
 you make on your machine shows up in the container straight away:
 
 ```bash
-docker run -v "$(pwd)/solution":/filler/solution -it filler
+./linux_game_engine -f maps/map00 -p1 solution/target/release/filler -p2 linux_robots/wall_e
 ```
 
 On Windows PowerShell, use `${PWD}` instead of `$(pwd)`.
